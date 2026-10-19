@@ -1,5 +1,6 @@
 {
-  "C_Cpp.intelliSenseEngine": "default",
+  "C_Cpp.intelliSenseEngine": "disabled",
+  "C_Cpp.errorSquiggles": "disabled",
   "idf.extensionActivationMode": "always",
   "cmake.configureOnOpen": false,
   "cmake.configureOnEdit": false,
@@ -20,17 +21,18 @@
     }
   },
   "idf.openOcdConfigs": [
-    "board/esp32c3-builtin.cfg"
+    "board/esp32-wrover-kit-3.3v.cfg"
   ],
-  "idf.port": "detect",
+  "idf.port": "/dev/ttyUSB0",
   "idf.currentSetup": "/home/danil/.espressif/v6.0.2/esp-idf",
   "idf.customExtraVars": {
-    "IDF_TARGET": "esp32c3"
+    "IDF_TARGET": "esp32"
   },
   "clangd.path": "/home/danil/.espressif/tools/esp-clang/esp-20.1.1_20250829/esp-clang/bin/clangd",
   "clangd.arguments": [
     "--background-index",
     "--query-driver=**",
     "--compile-commands-dir=/home/danil/practice_spi/build"
-  ]
+  ],
+  "idf.flashType": "UART"
 }
