@@ -1,41 +1,51 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 
-// это функция которая получает температуру и влажность с датчика и возвращает адрес массива пикселей где они уже нарисованы
+// indicator h or t takes 20 x 120 pixels. 
+// number or symbol takes 60 x 120 pixels 
+// symbols are 0 1 2 3 4 5 6 7 8 9 . - *space*
+
+// position argument:     -1 0 1 2 3 4 
+//                        -------------
+// position on display:   |h 8 2 . 7  |
+// position on display:   |t 3 1 . 8  |
+//                        -------------
+// position argument:      6 7 8 9 10 11
 
 
-// индикатор занимает 20 x 120 слева, один : h - *капелька*, t - *градусник*
-// номер или символ - 60 x 120 справа, до пяти : 0 1 2 3 4 5 6 7 8 9 . - *пробел*
-// -1 0 1 2 3 4 
-//  h 8 2 . 7
-//  t 3 1 . 8  0
-//  6 7 8 9 10 11
-
-void add_buffer_symbol(uint16_t* buffer, char character, int8_t position, int16_t y)
+void add_buffer_symbol(uint16_t* buffer, char character, int8_t position)
 {
-    int x = (position < 5) ? (20 + position * 60) : (20 + (position - 7) * 60);
 
-    // начало с x = 20 + position * 60 и y = y 
-    // если позиция больше 5 - отнимаем от нее 7 - это значит она уже внизу и нужно опять начинать с нуля
-    // добавляем 20 чтобы учеть кусок отнятый символами влажности или температуры. 
-    // умножаем позицию на 60 потому что каждая позиция двигает x на 60
-    // а y - он либо 0 либо 120.
-    // тут мы всегда отступаем от края пару единиц.
-    // формула индекса это x + y * ширина экрана
+    int x = (position < 5) ? (20 + position * 60) : (20 + (position - 7) * 60);
+    int y = (position < 5) ? (0) : (120);
+
+    // if position is < 5 - its in upper row
+    // if position is > 5 - its in bottom row - we substract 7 because we use the 1-2-3-4-5 in our calulations for each row
+    // we add 20 to nivelate the -1 and 6 positions - they are reserved for H and T, that takes 20 on x
+    // and we multiply position on 6 because each new position moves x on 60
+
+    // for y: if x < 0, we should start with y = 0. if x>5 - with y = 120
+    // its the difference between upper and bottom rows
+
+
+
+    // for drawing in 2d with 1d object, i will use the formula for the pixel massive index.
+    // index = x + y * display_width
 
     switch (character)
     {
 
 
     case 'h':
-        // рисуем символ h c 0,0 до 20,120
-        for (int i = 2; i <= 18; i++) // этот рисует полоски по x. i здесь репрезентует x
+        // drawing 'h' symbol from 0,0 to 20,120
+        for (int i = 2; i <= 18; i++) // this draws stripes along x. i represents x here
         {
             buffer[i + 55 * 320] = 0xffff;
             buffer[i + 56 * 320] = 0xffff;
         }
-        for (int i = 10; i <= 110; i++) // этот рисует полоски по y. i здесь репрезентует y
+        for (int i = 10; i <= 110; i++) // this draws stripes along y. i represents y here
         {
             buffer[2 + i * 320] = 0xffff;
             buffer[3 + i * 320] = 0xffff;
@@ -46,13 +56,13 @@ void add_buffer_symbol(uint16_t* buffer, char character, int8_t position, int16_
 
 
     case 't':
-        // рисуем символ t c 0,120 до 20,240
-        for (int i = 2; i <= 18; i++) // по x, i это x 
+        // drawing 't' symbol from 0,120 to 20,240
+        for (int i = 2; i <= 18; i++) // along x, i is x
         {
             buffer[i + 230 * 320] = 0xffff;
             buffer[i + 229 * 320] = 0xffff;
         }
-        for (int i = 130; i <= 230; i++) // по y, i это y
+        for (int i = 130; i <= 230; i++) // along y, i is y
         {
             buffer[9 + i * 320] = 0xffff;
             buffer[10 + i * 320] = 0xffff;
@@ -61,309 +71,256 @@ void add_buffer_symbol(uint16_t* buffer, char character, int8_t position, int16_
 
 
     case '0':
-        // рисуем символ 0 со следующими параметрами
+        // drawing symbol 0 with following parameters
         // начало с x = 20 + position * 60 и y = y 
-        // добавляем 20 чтобы учеть кусок отнятый символами влажности и температуры. 
-        // умножаем позицию на 60 потому что каждая позиция двигает x на 60
-        // с y - он либо 0 либо 120.
-        // тут мы всегда отступаем от края пару единиц.
-        // формула индекса это x + y * ширина экрана
-        for (int i = x + 2; i <= x + 58; i++) // этот рисует полоски по x - тут нужо 
+        // starting with x = 20 + position * 60 and y = y
+        // add 20 to account for chunk taken by humidity and temp symbols
+        // multiply position by 60 because each position moves x by 60
+        // for y - it's either 0 or 120
+        //
+        // here we always step back a couple units from edge
+        // index formula is x + y * display_width
+        // all of that we discussed earlier
+
+        for (int i = x + 2; i <= x + 58; i++) // this draws stripes along x
         {
             buffer[i + (y + 110) * 320] = 0xffff;
-            buffer[i + (y + 109) * 320] = 0xffff; // верхняя полоска
+            buffer[i + (y + 109) * 320] = 0xffff; // top stripe
 
             buffer[i + (y + 10) * 320] = 0xffff;
-            buffer[i + (y + 9) * 320] = 0xffff; // нижняя полоска
+            buffer[i + (y + 9) * 320] = 0xffff; // bottom stripe
         }
 
-        for (int i = y + 10; i <= y + 110; i++) // этот рисует полоски по y
+        for (int i = y + 10; i <= y + 110; i++) // this draws stripes along y
         {
             buffer[x + 2 + i * 320] = 0xffff;
-            buffer[x + 3 + i * 320] = 0xffff; // левая полоска
+            buffer[x + 3 + i * 320] = 0xffff; // left stripe
 
             buffer[x + 57 + i * 320] = 0xffff;
-            buffer[x + 58 + i * 320] = 0xffff; // правая полоска
+            buffer[x + 58 + i * 320] = 0xffff; // right stripe
         }
         break;
 
 
     case '1':
-        // рисуем символ 1 со следующими параметрами
-        // начало с x = 20 + position * 60 и y = y 
-        // добавляем 20 чтобы учеть кусок отнятый символами влажности и температуры. 
-        // умножаем позицию на 60 потому что каждая позиция двигает x на 60
-        // с y - он либо 0 либо 120.
-        // тут мы всегда отступаем от края пару единиц.
-        // формула индекса это x + y * ширина экрана
-
-        for (int i = y + 10; i <= y + 110; i++) // этот рисует полоски по y
+        for (int i = y + 10; i <= y + 110; i++) // this draws stripes along y
         {
             buffer[x + 29 + i * 320] = 0xffff;
             buffer[x + 30 + i * 320] = 0xffff;
-            buffer[x + 31 + i * 320] = 0xffff; // палка
+            buffer[x + 31 + i * 320] = 0xffff; // stick
         }
         break;
 
 
     case '2':
-        // рисуем символ 2 со следующими параметрами
-        // начало с x = 20 + position * 60 и y = y 
-        // добавляем 20 чтобы учеть кусок отнятый символами влажности и температуры. 
-        // умножаем позицию на 60 потому что каждая позиция двигает x на 60
-        // с y - он либо 0 либо 120.
-        // тут мы всегда отступаем от края пару единиц.
-        // формула индекса это x + y * ширина экрана
-
-        for (int i = x + 2; i <= x + 58; i++) // этот рисует полоски по x 
+        for (int i = x + 2; i <= x + 58; i++) // this draws stripes along x
         {
             buffer[i + (y + 110) * 320] = 0xffff;
-            buffer[i + (y + 109) * 320] = 0xffff; // верхняя полоска
+            buffer[i + (y + 109) * 320] = 0xffff; // top stripe
 
             buffer[i + (y + 60) * 320] = 0xffff;
-            buffer[i + (y + 59) * 320] = 0xffff; // серединная полоска
+            buffer[i + (y + 59) * 320] = 0xffff; // middle stripe
 
             buffer[i + (y + 10) * 320] = 0xffff;
-            buffer[i + (y + 9) * 320] = 0xffff; // нижняя полоска
+            buffer[i + (y + 9) * 320] = 0xffff; // bottom stripe
         }
 
-        for (int i = y + 60; i <= y + 110; i++) // этот рисует полоски по y
+        for (int i = y + 60; i <= y + 110; i++) // this draws stripes along y
         {
             buffer[x + 57 + i * 320] = 0xffff;
-            buffer[x + 58 + i * 320] = 0xffff; // правая полупалка
+            buffer[x + 58 + i * 320] = 0xffff; //right half-stick
         }
 
-        for (int i = y + 10; i <= y + 60; i++) // этот рисует полоски по y
+        for (int i = y + 10; i <= y + 60; i++) // this draws stripes along y
         {
             buffer[x + 3 + i * 320] = 0xffff;
-            buffer[x + 2 + i * 320] = 0xffff; // левая полупалка
+
+            buffer[x + 2 + i * 320] = 0xffff; // left half-stick
         }
         break;
 
 
     case '3':
-        // рисуем символ 3 со следующими параметрами
-        // начало с x = 20 + position * 60 и y = y 
-        // добавляем 20 чтобы учеть кусок отнятый символами влажности и температуры. 
-        // умножаем позицию на 60 потому что каждая позиция двигает x на 60
-        // с y - он либо 0 либо 120.
-        // тут мы всегда отступаем от края пару единиц.
-        // формула индекса это x + y * ширина экрана
 
-        for (int i = x + 2; i <= x + 58; i++) // этот рисует полоски по x 
+    for (int i = x + 2; i <= x + 58; i++) //this draws stripes along x
         {
             buffer[i + (y + 110) * 320] = 0xffff;
-            buffer[i + (y + 109) * 320] = 0xffff; // верхняя полоска
+            buffer[i + (y + 109) * 320] = 0xffff; // top stripe
 
             buffer[i + (y + 60) * 320] = 0xffff;
-            buffer[i + (y + 59) * 320] = 0xffff; // серединная полоска
+            buffer[i + (y + 59) * 320] = 0xffff; // middle stripe
 
             buffer[i + (y + 10) * 320] = 0xffff;
-            buffer[i + (y + 9) * 320] = 0xffff; // нижняя полоска
+            buffer[i + (y + 9) * 320] = 0xffff; //bottom stripe
         }
 
-        for (int i = y + 10; i <= y + 110; i++) // этот рисует полоски по y
+        for (int i = y + 10; i <= y + 110; i++) // this draws stripes along y
         {
             buffer[x + 57 + i * 320] = 0xffff;
-            buffer[x + 58 + i * 320] = 0xffff; // правая палка
+            buffer[x + 58 + i * 320] = 0xffff; //right stick
         }
         break;
 
 
     case '4':
-        // рисуем символ 4 со следующими параметрами
-        // начало с x = 20 + position * 60 и y = y 
-        // добавляем 20 чтобы учеть кусок отнятый символами влажности и температуры. 
-        // умножаем позицию на 60 потому что каждая позиция двигает x на 60
-        // с y - он либо 0 либо 120.
-        // тут мы всегда отступаем от края пару единиц.
-        // формула индекса это x + y * ширина экрана
 
-        for (int i = x + 2; i <= x + 58; i++) // этот рисует полоски по x 
+        for (int i = x + 2; i <= x + 58; i++) // this draws stripes along x
         {
             buffer[i + (y + 60) * 320] = 0xffff;
-            buffer[i + (y + 59) * 320] = 0xffff; // серединная полоска
+            buffer[i + (y + 59) * 320] = 0xffff; // middle stripe
         }
 
-        for (int i = y + 10; i <= y + 110; i++) // этот рисует полоски по y
+        for (int i = y + 10; i <= y + 110; i++) // this draws stripes along y
         {
             buffer[x + 57 + i * 320] = 0xffff;
-            buffer[x + 58 + i * 320] = 0xffff; // правая палка
+            buffer[x + 58 + i * 320] = 0xffff; // right stick
         }
 
-        for (int i = y + 60; i <= y + 110; i++) // этот рисует полоски по y
+        for (int i = y + 60; i <= y + 110; i++) // this draws stripes along y
         {
             buffer[x + 3 + i * 320] = 0xffff;
-            buffer[x + 2 + i * 320] = 0xffff; // левая полупалка
+            buffer[x + 2 + i * 320] = 0xffff; // left half-stick
         }
         break;
 
 
     case '5':
-        // рисуем символ 5 со следующими параметрами
-        // начало с x = 20 + position * 60 и y = y 
-        // добавляем 20 чтобы учеть кусок отнятый символами влажности и температуры. 
-        // умножаем позицию на 60 потому что каждая позиция двигает x на 60
-        // с y - он либо 0 либо 120.
-        // тут мы всегда отступаем от края пару единиц.
-        // формула индекса это x + y * ширина экрана
 
-        for (int i = x + 2; i <= x + 58; i++) // этот рисует полоски по x 
+        for (int i = x + 2; i <= x + 58; i++) // this draws stripes along x
         {
             buffer[i + (y + 110) * 320] = 0xffff;
-            buffer[i + (y + 109) * 320] = 0xffff; // верхняя полоска
+            buffer[i + (y + 109) * 320] = 0xffff; // top stripe
 
             buffer[i + (y + 60) * 320] = 0xffff;
-            buffer[i + (y + 59) * 320] = 0xffff; // серединная полоска
+            buffer[i + (y + 59) * 320] = 0xffff; // middle stripe
 
             buffer[i + (y + 10) * 320] = 0xffff;
-            buffer[i + (y + 9) * 320] = 0xffff; // нижняя полоска
+            buffer[i + (y + 9) * 320] = 0xffff; // bottom stripe
         }
 
-        for (int i = y + 60; i <= y + 110; i++) // этот рисует полоски по y
+        for (int i = y + 60; i <= y + 110; i++) // this draws stripes along y
         {
             buffer[x + 3 + i * 320] = 0xffff;
-            buffer[x + 2 + i * 320] = 0xffff; // правая полупалка
+            buffer[x + 2 + i * 320] = 0xffff; // right half-stick
         }
 
-        for (int i = y + 10; i <= y + 60; i++) // этот рисует полоски по y
+        for (int i = y + 10; i <= y + 60; i++) // this draws stripes along y
         {
             buffer[x + 57 + i * 320] = 0xffff;
-            buffer[x + 58 + i * 320] = 0xffff; // левая полупалка
+            buffer[x + 58 + i * 320] = 0xffff; // left half-stick
         }
         break;
 
 
     case '6':
-        // рисуем символ 6 со следующими параметрами
-        // начало с x = 20 + position * 60 и y = y 
-        // добавляем 20 чтобы учеть кусок отнятый символами влажности и температуры. 
-        // умножаем позицию на 60 потому что каждая позиция двигает x на 60
-        // с y - он либо 0 либо 120.
-        // тут мы всегда отступаем от края пару единиц.
-        // формула индекса это x + y * ширина экрана
 
-        for (int i = x + 2; i <= x + 58; i++) // этот рисует полоски по x 
+        for (int i = x + 2; i <= x + 58; i++) // this draws stripes along x
         {
             buffer[i + (y + 110) * 320] = 0xffff;
-            buffer[i + (y + 109) * 320] = 0xffff; // верхняя полоска
+            buffer[i + (y + 109) * 320] = 0xffff; // top stripe
 
             buffer[i + (y + 60) * 320] = 0xffff;
-            buffer[i + (y + 59) * 320] = 0xffff; // серединная полоска
+            buffer[i + (y + 59) * 320] = 0xffff; // middle stripe
 
             buffer[i + (y + 10) * 320] = 0xffff;
-            buffer[i + (y + 9) * 320] = 0xffff; // нижняя полоска
+            buffer[i + (y + 9) * 320] = 0xffff; // bottom stripe
         }
 
-        for (int i = y + 10; i <= y + 60; i++) // этот рисует полоски по y
+        for (int i = y + 10; i <= y + 60; i++) // this draws stripes along y
         {
             buffer[x + 57 + i * 320] = 0xffff;
-            buffer[x + 58 + i * 320] = 0xffff; // правая полупалка
+            buffer[x + 58 + i * 320] = 0xffff; // right half-stick
         }
 
-        for (int i = y + 10; i <= y + 110; i++) // этот рисует полоски по y
+        for (int i = y + 10; i <= y + 110; i++) // this draws stripes along y
         {
             buffer[x + 3 + i * 320] = 0xffff;
-            buffer[x + 2 + i * 320] = 0xffff; // левая палка
+            buffer[x + 2 + i * 320] = 0xffff; // left stick
         }
         break;
 
 
     case '7':
-        // рисуем символ 7 со следующими параметрами
-        // начало с x = 20 + position * 60 и y = y 
-        // добавляем 20 чтобы учеть кусок отнятый символами влажности и температуры. 
-        // умножаем позицию на 60 потому что каждая позиция двигает x на 60
-        // с y - он либо 0 либо 120.
-        // тут мы всегда отступаем от края пару единиц.
-        // формула индекса это x + y * ширина экрана
 
-        for (int i = x + 2; i <= x + 58; i++) // этот рисует полоски по x 
+        for (int i = x + 2; i <= x + 58; i++) // x
         {
             buffer[i + (y + 110) * 320] = 0xffff;
-            buffer[i + (y + 109) * 320] = 0xffff; // верхняя полоска
+            buffer[i + (y + 109) * 320] = 0xffff; // top stripe
         }
 
-        for (int i = y + 10; i <= y + 110; i++) // этот рисует полоски по y
+        for (int i = y + 10; i <= y + 110; i++) // y
         {
             buffer[x + 57 + i * 320] = 0xffff;
-            buffer[x + 58 + i * 320] = 0xffff; // правая палка
+            buffer[x + 58 + i * 320] = 0xffff; // right stick
         }
         break;
 
 
     case '8':
-        // рисуем символ 8 со следующими параметрами
-        // начало с x = 20 + position * 60 и y = y 
-        // добавляем 20 чтобы учеть кусок отнятый символами влажности и температуры. 
-        // умножаем позицию на 60 потому что каждая позиция двигает x на 60
-        // с y - он либо 0 либо 120.
-        // тут мы всегда отступаем от края пару единиц.
-        // формула индекса это x + y * ширина экрана
 
-        for (int i = x + 2; i <= x + 58; i++) // этот рисует полоски по x 
+        for (int i = x + 2; i <= x + 58; i++) // x
         {
             buffer[i + (y + 110) * 320] = 0xffff;
-            buffer[i + (y + 109) * 320] = 0xffff; // верхняя полоска
+            buffer[i + (y + 109) * 320] = 0xffff; // top stripe
 
             buffer[i + (y + 60) * 320] = 0xffff;
-            buffer[i + (y + 59) * 320] = 0xffff; // серединная полоска
+            buffer[i + (y + 59) * 320] = 0xffff; // middle stripe
 
             buffer[i + (y + 10) * 320] = 0xffff;
-            buffer[i + (y + 9) * 320] = 0xffff; // нижняя полоска
+            buffer[i + (y + 9) * 320] = 0xffff; // bottom stripe
         }
 
-        for (int i = y + 10; i <= y + 110; i++) // этот рисует полоски по y
+        for (int i = y + 10; i <= y + 110; i++) // y
         {
             buffer[x + 57 + i * 320] = 0xffff;
-            buffer[x + 58 + i * 320] = 0xffff; // правая палка
+            buffer[x + 58 + i * 320] = 0xffff; // right stick
 
             buffer[x + 3 + i * 320] = 0xffff;
-            buffer[x + 2 + i * 320] = 0xffff; // левая палка палка
+            buffer[x + 2 + i * 320] = 0xffff; // left stick
         }
         break;
 
 
     case '9':
-        for (int i = x + 2; i <= x + 58; i++) // этот рисует полоски по x 
+        for (int i = x + 2; i <= x + 58; i++) // this draws stripes along x
         {
             buffer[i + (y + 110) * 320] = 0xffff;
-            buffer[i + (y + 109) * 320] = 0xffff; // верхняя полоска
+            buffer[i + (y + 109) * 320] = 0xffff; // top stripe
 
             buffer[i + (y + 60) * 320] = 0xffff;
-            buffer[i + (y + 59) * 320] = 0xffff; // серединная полоска
+            buffer[i + (y + 59) * 320] = 0xffff; // middle stripe
         }
 
-        for (int i = y + 10; i <= y + 110; i++) // этот рисует полоски по y
+        for (int i = y + 10; i <= y + 110; i++) // this draws stripes along y
         {
             buffer[x + 57 + i * 320] = 0xffff;
-            buffer[x + 58 + i * 320] = 0xffff; // правая палка
+            buffer[x + 58 + i * 320] = 0xffff; // right stick
         }
 
-        for (int i = y + 60; i <= y + 110; i++) // этот рисует полоски по y
+        for (int i = y + 60; i <= y + 110; i++) // this draws stripes along y
         {
             buffer[x + 3 + i * 320] = 0xffff;
-            buffer[x + 2 + i * 320] = 0xffff; // левая полупалка
+            buffer[x + 2 + i * 320] = 0xffff; // left half-stick
         }
         break;
 
 
     case '-':
-        for (int i = x + 2; i <= x + 58; i++) // этот рисует полоски по x 
+        for (int i = x + 2; i <= x + 58; i++) // x
         {
             buffer[i + (y + 60) * 320] = 0xffff;
-            buffer[i + (y + 59) * 320] = 0xffff; // серединная полоска
+            buffer[i + (y + 59) * 320] = 0xffff; //  middle stripe
         }
         break;
 
 
     case '.':
-        for (int i = x + 53; i <= x + 58; i++) // этот рисует полоски по x 
+        for (int i = x + 53; i <= x + 58; i++) // x
         {
             buffer[i + (y + 9) * 320] = 0xffff;
-            buffer[i + (y + 10) * 320] = 0xffff; // серединная полоска
+            buffer[i + (y + 10) * 320] = 0xffff;
             buffer[i + (y + 11) * 320] = 0xffff;
-            buffer[i + (y + 12) * 320] = 0xffff; // серединная полоска
+            buffer[i + (y + 12) * 320] = 0xffff;
         }
         break;
 
@@ -371,12 +328,9 @@ void add_buffer_symbol(uint16_t* buffer, char character, int8_t position, int16_
     case ' ':
         break;
     }
-}
+};
 
-// у меня массив только одномерный. а рисую я в двухмерном пространстве 
-// каким образом сделать массив двухмерным? как я могу сказать в массив "нужно написать на координате x y вот такой символ" либо
-//
-// вот ответ: формула индекса это x + y * ширина экрана
+
 
 
 
@@ -384,45 +338,50 @@ uint16_t* float_to_pixel_buffer(float humidity, float temperature)
 
 {
 
-    // переводим цифры в массив символов для удобной трансформации. объявляем эти массивы
+    //
+    // converting numbers to char array for transformation. declaring these arrays
     char humidity_in_characters[6];
     char temperature_in_characters[6];
     
     snprintf(humidity_in_characters, sizeof(humidity_in_characters), "%.1f", humidity);
     snprintf(temperature_in_characters, sizeof(temperature_in_characters), "%.1f", temperature);
 
-    // теперь передаем эти символы в луп который сделает из каждого символа участок в буфере с нарисованным символом
-    // humidity in characters[3] - последний номер.
-    // temperature in characters[4] последний номер.
+    // 
+    // now we pass these chars into loop that will make a section in buffer with drawn symbol out of each char
+    
+    // humidity in characters[3] - last index. 
+    // temperature in characters[4] last index.
     //
-    // проходим от -1 - чтобы влепить на -1 символы влажности или температуры и с нуля уже начать проход по элементам массива
+    // iterating from -1 - to place humidity or temp symbols at -1 and start going through array elements from zero
 
-    static uint16_t buffer[320 * 240] = {0}; // объявляем буффер и щас будем его обновлять по адресу.
+    static uint16_t buffer[320 * 240]; 
+    memset(&buffer, 0, 320*240*2); // declaring empty buffer
 
 
-    for (int8_t i = -1; i < 13 ; i ++) // их 12: 2 из них символы влажность или температура. 10 - собственно числа температуры. 1 - конец массива /0
-    // конец массива всего один потому что до конца второго массива прога не дойдет
-    // -1 символ  0 Вцифра  1 Вцифра  2 Вцифра  3 Вцифра  4 Вцифра  5 /0конец  6 символ  7 Тцифра  8 Тцифра  9 Тцифра  10 Тцифра   11 Тцифра
+    
+    for (int8_t i = -1; i < 13 ; i ++) // there are 12 of them: 2 are humidity or temp symbols. 10 - the temp numbers themselves. 1 - end of array /0
+    // only one array end because the program wont reach the end of the second array
+    // -1 symbol  0 H_digit 1 H_digit 2 H_digit 3 H_digit 4 H_digit 5 /0end    6 symbol  7 T_digit 8 T_digit 9 T_digit 10 T_digit  11 T_digit
     {
-        if(i < 5) // до 5 идет влажность
+        if(i < 5) // up to 5 is humidity
         {
             if(i == -1)
             {
-                add_buffer_symbol(buffer, 'h', i, 0);
+                add_buffer_symbol(buffer, 'h', i);
                 continue;
             }
-            add_buffer_symbol(buffer, humidity_in_characters[i], i, 0); // эту функцию как и символы надо записать в number_symbol
+            add_buffer_symbol(buffer, humidity_in_characters[i], i); // this function and symbols should be moved into number_symbol
             continue;
         };
 
-        if(i > 5) // после 5 идет температура . саму пятерку игнорируем, потому что под humidity_in_characters[5] будет /0
+        if(i > 5) // after 5 is temperature. ignoring five, because under humidity_in_characters[5] will be /0
         {
             if(i == 6)
             {
-                add_buffer_symbol(buffer, 't', i, 120);
+                add_buffer_symbol(buffer, 't', i);
                 continue;
             }
-            add_buffer_symbol(buffer, temperature_in_characters[i-7], i, 120 ); // тут i-7 потому что когда i дойдет до этого момента, он будет 7, а мы хотим начать с нулевого символа массива
+            add_buffer_symbol(buffer, temperature_in_characters[i-7], i); // here its i-7 because when i gets here it will be 7, but we want to start with index 0 of the array
         };
     };
 

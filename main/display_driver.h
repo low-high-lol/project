@@ -5,8 +5,8 @@
 #include <driver/spi_master.h>
 #include <driver/gpio.h>
 
-esp_err_t start_device_spi (void);
+esp_err_t start_device_spi(void);
 
-void spi_display_reset();
+esp_err_t spi_display_prepare(void);
 
-void spi_display_paint (uint16_t *buffer );
+esp_err_t spi_display_paint(uint16_t *buffer );

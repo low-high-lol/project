@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-void add_buffer_symbol(uint16_t* buffer, char character, int8_t position, int16_t y);
+void add_buffer_symbol(uint16_t* buffer, char character, int8_t position);
 // функция 2 - принимает адрес на массив и рисует в нем пиксели
 
 uint16_t* float_to_pixel_buffer(float humidity, float temperature);
