@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -9,25 +10,26 @@
 #include <nvs_flash.h>
 #include <mqtt_client.h>
 
+#include "aht_driver.h"
+#include <driver/i2c_master.h>
+
 #include <dht.h>
 #include "esp_err.h"
 #include "float_to_buffer.h"
 #include "display_driver.h"
 
+
 #define CONTROL_BUTTON_PIN GPIO_NUM_0 //esp32 own button (boot)
 
-#define SENSOR_PIN GPIO_NUM_19 // dht22 pin (it operates with single pin)
+// #define SENSOR_PIN GPIO_NUM_19 // dht22 pin (it operates with single pin)
 
-#define SPI_CLOCK GPIO_NUM_17
-#define MOSI GPIO_NUM_16
-#define MISO GPIO_NUM_18
-#define DC_DISPLAY GPIO_NUM_4 // this display model has a separate hardware data/command pin
-#define CS_DISPLAY GPIO_NUM_2
-#define RESET_DISPLAY GPIO_NUM_15 // this display model has a hardware reset
 
-// We will fill those floats with our data by reding the sensor
+// We will fill those floats and ints with our data by reading the sensor
 float temperature = 0;
 float humidity = 0;
+
+uint32_t temperature_raw = 0; 
+uint32_t humidity_raw = 0;
 
 
 void app_main(void)
@@ -36,6 +38,8 @@ void app_main(void)
     // Launch spi bus & add the display on it
     ESP_ERROR_CHECK(start_device_spi()); 
     
+    aht_configure();
+ 
     // Initial config of the display - resetting, setting landscape orientation and RGB pixel format
     ESP_ERROR_CHECK(spi_display_prepare());
 
@@ -45,8 +49,9 @@ void app_main(void)
         if(gpio_get_level(CONTROL_BUTTON_PIN) == 0)
         {
             // This dht library function returns humidity and temperature from the dht22 sensor
-            ESP_ERROR_CHECK(dht_read_float_data(DHT_TYPE_AM2301, SENSOR_PIN, &humidity, &temperature)); 
+            // ESP_ERROR_CHECK(dht_read_float_data(DHT_TYPE_AM2301, SENSOR_PIN, &humidity, &temperature)); 
             
+            aht20_read_data(&temperature_raw, &temperature, &humidity_raw, &humidity);
             printf("H: %f \n",humidity);
             printf("T: %f,\n",temperature);
 

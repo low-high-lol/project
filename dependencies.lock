@@ -39,6 +39,48 @@ dependencies:
     - esp32s2
     - esp32s3
     version: 1.4.0
+  espressif/aht20:
+    component_hash: 76e613c248fd7533483e592f995a72dbefadf396447a2e3570645b3da80abb7c
+    dependencies:
+    - name: espressif/cmake_utilities
+      registry_url: https://components.espressif.com
+      require: private
+      version: '*'
+    - name: espressif/i2c_bus
+      registry_url: https://components.espressif.com
+      require: public
+      version: ^1.4.0
+    - name: idf
+      require: private
+      version: '>=4.3'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 2.0.0
+  espressif/cmake_utilities:
+    component_hash: 05165f30922b422b4b90c08845e6d449329b97370fbd06309803d8cb539d79e3
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=4.1'
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    version: 1.1.1
+  espressif/i2c_bus:
+    component_hash: 483112c1619c54c38d0b734fb25f1678733267858a77b7af2f48cc7db6dbbd84
+    dependencies:
+    - name: espressif/cmake_utilities
+      registry_url: https://components.espressif.com
+      require: private
+      version: '*'
+    - name: idf
+      require: private
+      version: '>=4.0'
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    version: 1.5.2
   espressif/mqtt:
     component_hash: fb18bc3b65aa8c94693a9811ffc322cca8a65d92d5ec84983d3e385080e3969c
     dependencies:
@@ -55,8 +97,9 @@ dependencies:
     version: 6.0.2
 direct_dependencies:
 - esp-idf-lib/dht
+- espressif/aht20
 - espressif/mqtt
 - idf
-manifest_hash: 23f87205ab13b6a8b42ef5506df15bfef7f8075183e6e761328ca8c630b2a9b5
+manifest_hash: 5cf3995ba5b346ad97fcad4678d687e10d7062ee68cbcc7c55b84976cbe9b3fd
 target: esp32
 version: 3.0.0

@@ -5,13 +5,13 @@
 
 
 #define CONTROL_BUTTON_PIN GPIO_NUM_0
-#define SENSOR_PIN GPIO_NUM_19
+// #define SENSOR_PIN GPIO_NUM_19 // legacy from dht
 #define SPI_CLOCK GPIO_NUM_17
-#define MOSI GPIO_NUM_16
-#define MISO GPIO_NUM_18
-#define DC_DISPLAY GPIO_NUM_4 // data / command pin
-#define CS_DISPLAY GPIO_NUM_2
-#define RESET_DISPLAY GPIO_NUM_15
+#define SPI_MOSI GPIO_NUM_16
+#define SPI_MISO GPIO_NUM_18
+#define SPI_DC GPIO_NUM_4 // data / command pin
+#define SPI_CS GPIO_NUM_2
+#define RESET_DISPLAY GPIO_NUM_15 // this display model has a hardware reset
 
 // ili display controller specs:
 // spi mode 0
@@ -29,7 +29,7 @@ esp_err_t start_device_spi (void)
 
     gpio_config_t gpio_output_dc = 
     {
-        .pin_bit_mask = (1ULL << DC_DISPLAY),
+        .pin_bit_mask = (1ULL << SPI_DC),
         .mode = GPIO_MODE_OUTPUT,
         .pull_up_en = GPIO_PULLUP_DISABLE,
         .pull_down_en = GPIO_PULLDOWN_DISABLE,
@@ -53,8 +53,8 @@ esp_err_t start_device_spi (void)
 
     spi_bus_config_t bus_config =
     {
-        .mosi_io_num = MOSI,
-        .miso_io_num = MISO,
+        .mosi_io_num = SPI_MOSI,
+        .miso_io_num = SPI_MISO,
         .sclk_io_num = SPI_CLOCK,
         .quadwp_io_num = -1,
         .quadhd_io_num = -1,
@@ -69,7 +69,7 @@ esp_err_t start_device_spi (void)
     {
         .clock_speed_hz = 20*1000*1000,
         .mode = 0,
-        .spics_io_num = CS_DISPLAY,
+        .spics_io_num = SPI_CS,
         .queue_size = 7,
     };
 
@@ -107,7 +107,7 @@ esp_err_t spi_display_prepare(void)
     // So, we´ll send "sleep_out" command
     
 
-    gpio_set_level(DC_DISPLAY, 0);  // 0 is command
+    gpio_set_level(SPI_DC, 0);  // 0 is command
 
     spi_transaction_t sleep_out_command =
     {
@@ -123,7 +123,7 @@ esp_err_t spi_display_prepare(void)
 
     // now we set landscape orientation by sending  "orientation set" command followed by "landscape orientation" data
 
-    gpio_set_level(DC_DISPLAY, 0); // command
+    gpio_set_level(SPI_DC, 0); // command
 
     spi_transaction_t orientation_set_command =
     {
@@ -134,7 +134,7 @@ esp_err_t spi_display_prepare(void)
     spi_device_transmit(display_handle, &orientation_set_command);
 
 
-    gpio_set_level(DC_DISPLAY, 1); // data
+    gpio_set_level(SPI_DC, 1); // data
 
     spi_transaction_t orientation_landscape_data =
     {
@@ -148,7 +148,7 @@ esp_err_t spi_display_prepare(void)
 
     // now we need to set the display pixel format. i want the display to take 2 bytes for each pixel colour, uint16 as an rgb colour identificator
 
-    gpio_set_level(DC_DISPLAY, 0); // command
+    gpio_set_level(SPI_DC, 0); // command
 
     spi_transaction_t colour_format_set_command =
     {
@@ -159,7 +159,7 @@ esp_err_t spi_display_prepare(void)
     spi_device_transmit(display_handle, &colour_format_set_command);
 
 
-    gpio_set_level(DC_DISPLAY, 1); // data
+    gpio_set_level(SPI_DC, 1); // data
 
     spi_transaction_t colour_format_set_data =
     {
@@ -176,7 +176,7 @@ esp_err_t spi_display_prepare(void)
     // now we turn this on
 
 
-    gpio_set_level(DC_DISPLAY, 0);
+    gpio_set_level(SPI_DC, 0);
 
 
     spi_transaction_t display_on_transaction =
@@ -210,7 +210,7 @@ esp_err_t spi_display_paint (uint16_t *buffer )
 
     // 1)
 
-    gpio_set_level(DC_DISPLAY,0); // command
+    gpio_set_level(SPI_DC,0); // command
 
     spi_transaction_t transaction_1 = 
     {
@@ -223,7 +223,7 @@ esp_err_t spi_display_paint (uint16_t *buffer )
 
     //2)
 
-    gpio_set_level(DC_DISPLAY,1); //data
+    gpio_set_level(SPI_DC,1); //data
 
     spi_transaction_t transaction_2 = 
     {
@@ -236,7 +236,7 @@ esp_err_t spi_display_paint (uint16_t *buffer )
 
     //3)
 
-    gpio_set_level(DC_DISPLAY,0); //command
+    gpio_set_level(SPI_DC,0); //command
 
     spi_transaction_t transaction_3 = 
     {
@@ -249,7 +249,7 @@ esp_err_t spi_display_paint (uint16_t *buffer )
 
     //4)
 
-    gpio_set_level(DC_DISPLAY,1); //data
+    gpio_set_level(SPI_DC,1); //data
 
     spi_transaction_t transaction_4 = 
     {
@@ -261,7 +261,7 @@ esp_err_t spi_display_paint (uint16_t *buffer )
 
     //5)
 
-    gpio_set_level(DC_DISPLAY,0); //command
+    gpio_set_level(SPI_DC,0); //command
 
     spi_transaction_t transaction_5 = 
     {
@@ -274,7 +274,7 @@ esp_err_t spi_display_paint (uint16_t *buffer )
     
     //6)
 
-    gpio_set_level(DC_DISPLAY,1); //data
+    gpio_set_level(SPI_DC,1); //data
 
 
     spi_transaction_t transaction_6 = 
