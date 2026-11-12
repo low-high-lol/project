@@ -197,7 +197,7 @@ esp_err_t spi_display_prepare(void)
 
 //  this function takes the buffer and draws numbers in it
 
-esp_err_t spi_display_paint (uint16_t *buffer )
+esp_err_t spi_display_paint(int x_start, int x_end, int y_start, int y_end, uint16_t *buffer )
 {
     // to paint,  we need 6 transactions:
     // 1) command "listen to X start, X end "
