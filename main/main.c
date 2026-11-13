@@ -31,13 +31,6 @@
 static bool wifi_connected = false;
 static bool mqtt_started = false;
 
-// We will fill those floats and ints with our data by reading the sensor
-float temperature = 0;
-float humidity = 0;
-
-uint32_t temperature_raw = 0; 
-uint32_t humidity_raw = 0;
-
 
 // this is wifi event handler
 static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
@@ -94,7 +87,12 @@ static void mqtt_event_handler(void *arg, esp_event_base_t event_base, int32_t e
 };
 
 
+// We will fill those floats and ints with our data by reading the sensor
+float temperature = 0;
+float humidity = 0;
 
+uint32_t temperature_raw = 0; 
+uint32_t humidity_raw = 0;
 
 
 
@@ -145,12 +143,8 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_mqtt_client_register_event(mqtt_handle, ESP_EVENT_ANY_ID, mqtt_event_handler, NULL));
 
 
-
-
-   
+    // start wifi
     ESP_ERROR_CHECK(esp_wifi_start()); 
-
-
 
 
     // Launch spi bus & add the display on it
@@ -183,11 +177,16 @@ void app_main(void)
             printf("T: %f,\n",temperature);
 
             //Creating the pixel buffer - 320 * 240 pixels, each pixel is 2 byte unsigned integer that represents an rgb colour 
-            uint16_t* buffer_to_send = float_to_pixel_buffer(humidity, temperature);
+            uint16_t* buffer_to_send = float_to_pixel_buffer('h', humidity);
 
             //Sending the created buffer to the display
-            spi_display_paint(0, 119, 0, 159  buffer_to_send);
+            spi_display_paint(0, 319, 0, 119 ,buffer_to_send);
+            
+            buffer_to_send = float_to_pixel_buffer('t', temperature);
 
+
+            spi_display_paint(0, 319, 120, 239 ,buffer_to_send);
+            
 
 
 

@@ -208,6 +208,22 @@ esp_err_t spi_display_paint(int x_start, int x_end, int y_start, int y_end, uint
     // 6) data with the buffer
 
 
+    // We need to send the 16 bits coordinate as 8 and 8 bits - divided in two parts in binary.
+    // for example 0xAAF2 will be oxAA and 0xF2
+
+    uint8_t x_start_high = x_start >> 8; // only left half 8 bits (higher) of this 16 bits number
+    uint8_t x_start_low = x_start & 0xFF; // only right half 8 of this 16 bits number
+
+    uint8_t x_end_high = x_end >> 8;
+    uint8_t x_end_low = x_end & 0xFF;
+    
+    uint8_t y_start_high = y_start >> 8;
+    uint8_t y_start_low = y_start & 0xFF;
+
+    uint8_t y_end_high = y_end >> 8;
+    uint8_t y_end_low = y_end & 0xFF;
+
+
     // 1)
 
     gpio_set_level(SPI_DC,0); // command
@@ -229,7 +245,7 @@ esp_err_t spi_display_paint(int x_start, int x_end, int y_start, int y_end, uint
     {
         .flags = SPI_TRANS_USE_TXDATA,
         .length = 32,
-        .tx_data = {0x00, 0x00, 0x01,0x3f}
+        .tx_data = {x_start_high, x_start_low, x_end_high,x_end_low}
     };
     spi_device_transmit(display_handle, &transaction_2);
 
@@ -255,7 +271,7 @@ esp_err_t spi_display_paint(int x_start, int x_end, int y_start, int y_end, uint
     {
         .flags = SPI_TRANS_USE_TXDATA,
         .length = 32,
-        .tx_data = {0x00, 0x00, 0x00,0xef}
+        .tx_data = {y_start_high, y_start_low, y_end_high,y_end_low}
     };
     spi_device_transmit(display_handle, &transaction_4);
 
@@ -279,7 +295,7 @@ esp_err_t spi_display_paint(int x_start, int x_end, int y_start, int y_end, uint
 
     spi_transaction_t transaction_6 = 
     {
-        .length = 320*240*16,
+        .length = (x_end - x_start + 1) * (y_end - y_start + 1) * 16,
         .tx_buffer = buffer
     };
 
