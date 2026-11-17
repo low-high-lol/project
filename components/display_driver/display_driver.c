@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include <string.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <driver/spi_master.h>
@@ -6,12 +8,13 @@
 
 #define CONTROL_BUTTON_PIN GPIO_NUM_0
 // #define SENSOR_PIN GPIO_NUM_19 // legacy from dht
-#define SPI_CLOCK GPIO_NUM_17
-#define SPI_MOSI GPIO_NUM_16
-#define SPI_MISO GPIO_NUM_18
-#define SPI_DC GPIO_NUM_4 // data / command pin
-#define SPI_CS GPIO_NUM_2
-#define RESET_DISPLAY GPIO_NUM_15 // this display model has a hardware reset
+#define SPI_CLOCK GPIO_NUM_21
+#define SPI_MOSI GPIO_NUM_19
+#define SPI_MISO GPIO_NUM_23
+#define SPI_DC GPIO_NUM_18 // data / command pin
+#define SPI_CS GPIO_NUM_17
+#define RESET_DISPLAY GPIO_NUM_5 // this display model has a hardware reset
+#define DISPLAY_LED GPIO_NUM_22
 
 // ili display controller specs:
 // spi mode 0
@@ -48,6 +51,17 @@ esp_err_t start_device_spi (void)
     };
     gpio_config(&gpio_output_reset);
 
+    gpio_config_t gpio_output_led =
+    {
+        .pin_bit_mask = (1ULL << DISPLAY_LED),
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE
+    };
+    gpio_config(&gpio_output_led);
+    gpio_set_level(DISPLAY_LED, 1);
+
 
     // Now we create an spi bus
 
@@ -67,7 +81,7 @@ esp_err_t start_device_spi (void)
 
    spi_device_interface_config_t display_spi_config =
     {
-        .clock_speed_hz = 20*1000*1000,
+        .clock_speed_hz = 4*1000*1000,
         .mode = 0,
         .spics_io_num = SPI_CS,
         .queue_size = 7,
@@ -98,6 +112,7 @@ esp_err_t spi_display_prepare(void)
 
     // resetting the display by giving 0 on the reset pin
     gpio_set_level(RESET_DISPLAY, 0);
+    vTaskDelay(pdMS_TO_TICKS(20));
     gpio_set_level(RESET_DISPLAY, 1);
 
     // this operation should be followed by a short delay according to the data sheet
@@ -143,6 +158,30 @@ esp_err_t spi_display_prepare(void)
         .tx_data = {0x28} // "landscape" data
     };
     spi_device_transmit(display_handle, &orientation_landscape_data);
+
+
+    // now we rotate the display by 180 degrees by setting MY and MX bits in MADCTL
+
+    gpio_set_level(SPI_DC, 0); // command
+
+    spi_transaction_t orientation_180_command =
+    {
+        .flags = SPI_TRANS_USE_TXDATA,
+        .length = 8,
+        .tx_data = {0x36} // set orientation command
+    };
+    spi_device_transmit(display_handle, &orientation_180_command);
+
+
+    gpio_set_level(SPI_DC, 1); // data
+
+    spi_transaction_t orientation_180_data =
+    {
+        .flags = SPI_TRANS_USE_TXDATA,
+        .length = 8,
+        .tx_data = {0xE8} // "landscape 180" data (MY=1, MX=1, MV=1, BGR=1)
+    };
+    spi_device_transmit(display_handle, &orientation_180_data);
 
 
 

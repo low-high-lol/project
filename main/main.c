@@ -9,6 +9,7 @@
 #include <esp_event.h>
 #include <nvs_flash.h>
 #include <mqtt_client.h>
+#include <esp_crt_bundle.h>
 
 #include "aht_driver.h"
 #include <driver/i2c_master.h>
@@ -131,6 +132,7 @@ void app_main(void)
     esp_mqtt_client_config_t mqtt_config = 
     {
         .broker.address.uri = "mqtts://xperia-n8n.tailefa49a.ts.net:8443",
+        .broker.verification.crt_bundle_attach = esp_crt_bundle_attach,
         .credentials.client_id = "esp_temperature",
         .credentials.username =  MQTT_USER,
         .credentials.authentication.password = MQTT_PASSWORD,
@@ -149,11 +151,11 @@ void app_main(void)
 
     // Launch spi bus & add the display on it
     ESP_ERROR_CHECK(start_device_spi()); 
-    
-    aht_configure();
  
     // Initial config of the display - resetting, setting landscape orientation and RGB pixel format
     ESP_ERROR_CHECK(spi_display_prepare());
+
+    aht_configure();
 
     // main cycle
     while(1)
@@ -195,13 +197,11 @@ void app_main(void)
                 char message[64];
                 snprintf(message, sizeof(message) ,"H: %.2f, T:%.2f", humidity, temperature);
                 esp_mqtt_client_publish(mqtt_handle, "/temp" , message,0, 2, 1 );
-                printf("Сообщение отправлено \n");
             };
         };
 
         // delay to register only the first button press
         vTaskDelay(pdMS_TO_TICKS(200));
     };
-
 
 };
