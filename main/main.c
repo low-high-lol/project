@@ -24,8 +24,8 @@
 // #define SENSOR_PIN GPIO_NUM_19 // dht22 pin (it operates with single pin)
 
 
-#define WIFI_SSID "CasaGodoy2.4"
-#define WIFI_PASSWORD "casagodoy2022"
+#define WIFI_SSID "Patricia"
+#define WIFI_PASSWORD "lucas195"
 #define MQTT_USER "danil"
 #define MQTT_PASSWORD "xperia-mqtt-2026"
 
@@ -74,13 +74,13 @@ static void mqtt_event_handler(void *arg, esp_event_base_t event_base, int32_t e
     {
         char message[] = "Sensor connected";
         esp_mqtt_client_publish(mqtt_handle, "/temp" ,message,36, 2, 1 );
-        printf("Подключен к mqtt \n");
+        printf("Mqtt connection established \n");
 
         
     };
     if (event_id == MQTT_EVENT_PUBLISHED)
     {
-        printf("Сообщение отправлено \n");
+        printf("Message sent\n");
         
         
     };
